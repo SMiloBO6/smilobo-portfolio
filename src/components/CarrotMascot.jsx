@@ -10,6 +10,8 @@ export default function CarrotMascot(props) {
       height={size}
       alt=""
       aria-hidden="true"
+      decoding="async"
+      draggable="false"
     />
   )
 }

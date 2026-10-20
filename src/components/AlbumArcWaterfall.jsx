@@ -43,13 +43,26 @@ function IconExternal() {
   )
 }
 
-// 把卡片复制 3 份做无缝滚动轨道
+// 两份卡片即可覆盖当前轨道宽度，减少 DOM 和绘制负担
 function makeTrack(items) {
-  return [...items, ...items, ...items]
+  return [...items, ...items]
 }
 
 // 卡片沿弧线的最大倾角
 const CARD_TILT = 9
+
+const cardStyleCache = new WeakMap()
+
+function setCardStyle(node, property, value) {
+  let cache = cardStyleCache.get(node)
+  if (!cache) {
+    cache = {}
+    cardStyleCache.set(node, cache)
+  }
+  if (cache[property] === value) return
+  cache[property] = value
+  node.style.setProperty(property, value)
+}
 
 function clampUnit(v) {
   return v < -1 ? -1 : v > 1 ? 1 : v
@@ -204,7 +217,11 @@ function WaterfallRow(props) {
   const rowRef = useRef()
   const offsetRef = useRef(0)
   const lastTimeRef = useRef(0)
+  const lastPaintRef = useRef(0)
   const speedRef = useRef(baseSpeed)
+  const metricsRef = useRef({ groupWidth: 0, positions: [], widths: [] })
+  const metricsDirtyRef = useRef(true)
+  const viewportWidthRef = useRef(Math.max(1, window.innerWidth))
   const track = useMemo(function () { return makeTrack(items) }, [items])
   const total = items.length
   const dirSign = direction === 'rtl' ? -1 : 1
@@ -213,10 +230,52 @@ function WaterfallRow(props) {
     const el = trackRef.current
     if (!el) return
     let raf
+
+    function measureTrack() {
+      const cards = el.children
+      if (!cards.length) return
+      const first = cards[0]
+      const secondSetFirst = cards[Math.min(total, cards.length - 1)]
+      const groupWidth =
+        first && secondSetFirst && secondSetFirst !== first
+          ? secondSetFirst.offsetLeft - first.offsetLeft
+          : el.scrollWidth / 2
+      const positions = new Array(cards.length)
+      const widths = new Array(cards.length)
+
+      for (let i = 0; i < cards.length; i += 1) {
+        positions[i] = cards[i].offsetLeft
+        widths[i] = cards[i].offsetWidth
+      }
+
+      metricsRef.current = { groupWidth, positions, widths }
+      metricsDirtyRef.current = false
+    }
+
+    function refreshLayout() {
+      viewportWidthRef.current = Math.max(1, window.innerWidth)
+      metricsDirtyRef.current = true
+    }
+
+    measureTrack()
+    window.addEventListener('resize', refreshLayout, { passive: true })
+
     function tick(now) {
+      raf = requestAnimationFrame(tick)
+      if (document.visibilityState === 'hidden') {
+        lastTimeRef.current = now
+        return
+      }
+      // 30fps keeps the continuous arc animation smooth without blocking image decode.
+      if (now - lastPaintRef.current < 31) return
+      lastPaintRef.current = now
+
       if (lastTimeRef.current === 0) lastTimeRef.current = now
       const dt = Math.min(0.05, (now - lastTimeRef.current) / 1000)
       lastTimeRef.current = now
+
+      if (metricsDirtyRef.current) measureTrack()
+      const metrics = metricsRef.current
 
       const target = velocityRef.current * dirSign
       // 指数插值：速度平缓趋近目标值，不会瞬间跳变
@@ -224,16 +283,9 @@ function WaterfallRow(props) {
       speedRef.current = speedRef.current + (target - speedRef.current) * k
       offsetRef.current += speedRef.current * dt
 
-      // 用「第一组」与「第二组」首张卡片的位移差得到精确单组宽度，避免接缝跳动
-      const first = el.children[0]
-      const secondSetFirst = el.children[total]
-      const third =
-        first && secondSetFirst
-          ? secondSetFirst.offsetLeft - first.offsetLeft
-          : el.scrollWidth / 3
-      if (third > 0) {
-        if (offsetRef.current >= third) offsetRef.current -= third
-        if (offsetRef.current < 0) offsetRef.current += third
+      if (metrics.groupWidth > 0) {
+        if (offsetRef.current >= metrics.groupWidth) offsetRef.current -= metrics.groupWidth
+        if (offsetRef.current < 0) offsetRef.current += metrics.groupWidth
       }
       el.style.transform = 'translate3d(' + (-offsetRef.current).toFixed(2) + 'px,0,0)'
 
@@ -242,48 +294,63 @@ function WaterfallRow(props) {
         const rowRect = row.getBoundingClientRect()
         // 整排滚出视口时不再逐张计算，省掉无意义的重排
         if (rowRect.bottom > -240 && rowRect.top < window.innerHeight + 240) {
-          const viewportCenter = window.innerWidth / 2
+          const viewportWidth = viewportWidthRef.current
+          const viewportCenter = viewportWidth / 2
           // 弧线跨度取屏宽的 40%，跨度越窄弯度越明显
-          const curveSpan = Math.max(240, window.innerWidth * 0.4)
+          const curveSpan = Math.max(240, viewportWidth * 0.4)
           // 1 = 上排中心向下鼓，-1 = 下排中心向上鼓：两排对称，凸面都朝向中央唱片
           const inset = side === 'top' ? 1 : -1
-          const cards = el.children
-          for (let i = 0; i < cards.length; i += 1) {
-            const card = cards[i]
+          for (let i = 0; i < metrics.positions.length; i += 1) {
+            const card = el.children[i]
+            if (!card) continue
             const cardCenter =
               rowRect.left +
-              card.offsetLeft +
-              card.offsetWidth / 2 -
+              metrics.positions[i] +
+              metrics.widths[i] / 2 -
               offsetRef.current
             const n = clampUnit((cardCenter - viewportCenter) / curveSpan)
-            card.style.setProperty('--curve-y', (arcProfile(n) * inset).toFixed(4))
+            setCardStyle(card, '--curve-y', (arcProfile(n) * inset).toFixed(4))
             // 卡片顺着弧线切线旋转，越靠两端越朝外张开
-            card.style.setProperty('--curve-rot', (-n * inset * CARD_TILT).toFixed(2) + 'deg')
+            setCardStyle(card, '--curve-rot', (-n * inset * CARD_TILT).toFixed(2) + 'deg')
           }
         }
       }
-      raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
-    return function () { cancelAnimationFrame(raf) }
+    return function () {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', refreshLayout)
+    }
   }, [dirSign, side, velocityRef, total])
 
   // 鼠标越靠近这条轨道，目标速度越低：全局监听 + smoothstep，让减速是渐进的
   useEffect(function () {
-    function onGlobalMove(e) {
+    let pointerRaf = 0
+    let pointerY = 0
+
+    function updateVelocity() {
+      pointerRaf = 0
       const row = rowRef.current
       if (!row) return
       const rect = row.getBoundingClientRect()
       const centerY = rect.top + rect.height / 2
-      const dist = Math.abs(e.clientY - centerY)
+      const dist = Math.abs(pointerY - centerY)
       const range = rect.height / 2 + 300
       const raw = 1 - dist / range
       const c = raw <= 0 ? 0 : raw >= 1 ? 1 : raw * raw * (3 - 2 * raw)
       // 最慢降到基础速度的 4%，接近时是渐变而不是直接归零
       velocityRef.current = baseSpeed * (1 - c * 0.96)
     }
+
+    function onGlobalMove(e) {
+      pointerY = e.clientY
+      if (!pointerRaf) pointerRaf = requestAnimationFrame(updateVelocity)
+    }
     window.addEventListener('mousemove', onGlobalMove)
-    return function () { window.removeEventListener('mousemove', onGlobalMove) }
+    return function () {
+      window.removeEventListener('mousemove', onGlobalMove)
+      cancelAnimationFrame(pointerRaf)
+    }
   }, [baseSpeed, velocityRef])
 
   return (
@@ -312,7 +379,15 @@ function WaterfallRow(props) {
               onClick={function (e) { onPick(item.album, item.face, e) }}
               aria-label={item.album.title + (item.face === 'outfit' ? ' 穿搭实拍' : ' 专辑封面')}
             >
-              <img src={item.src} alt={item.album.title} />
+              <img
+                src={item.src}
+                alt={item.album.title}
+                width="148"
+                height="148"
+                loading="lazy"
+                decoding="async"
+                draggable="false"
+              />
             </button>
           )
         })}
@@ -343,6 +418,7 @@ export default function AlbumArcWaterfall(props) {
   // 首次进入不播标题动画，用户点过专辑之后才开始播
   const pickedRef = useRef(false)
   const paletteRef = useRef(null)
+  const extractedRef = useRef({})
   // 记录已经应用过的 URL 参数，避免用户点选其它专辑时被同步逻辑拉回
   const appliedRequestRef = useRef(requestedAlbum ? requestedAlbum.id : '')
   const baseSpeed = 128
@@ -377,27 +453,23 @@ export default function AlbumArcWaterfall(props) {
     return map
   }, [albums])
 
-  // 进页面时把所有封面读一遍，提取主色缓存起来，切换专辑就不用等
+  // 只读取当前封面。预设色卡先保证首屏可立即显示，无需下载全部专辑封面。
   useEffect(function () {
+    if (!active || !active.cover || extractedRef.current[active.id]) return undefined
     let cancelled = false
-    albums.forEach(function (a) {
-      const img = new Image()
-      img.decoding = 'async'
-      img.onload = function () {
-        if (cancelled) return
-        const p = extractPalette(img, 4)
-        if (p && p.length >= 3) {
-          setExtracted(function (prev) {
-            const next = { ...prev }
-            next[a.id] = p
-            return next
-          })
-        }
+    const img = new Image()
+    img.decoding = 'async'
+    img.onload = function () {
+      if (cancelled) return
+      const p = extractPalette(img, 4)
+      if (p && p.length >= 3) {
+        extractedRef.current = { ...extractedRef.current, [active.id]: p }
+        setExtracted(extractedRef.current)
       }
-      img.src = a.cover
-    })
+    }
+    img.src = active.cover
     return function () { cancelled = true }
-  }, [albums])
+  }, [active.id, active.cover])
 
   const palette = extracted[active.id] || fallback[active.id]
   useEffect(function () { paletteRef.current = palette }, [palette])
@@ -471,12 +543,20 @@ export default function AlbumArcWaterfall(props) {
 
   useEffect(function () {
     let raf
-    function tick() {
+    let lastPaint = 0
+    let lastSurfacePaint = 0
+
+    function tick(now) {
+      raf = requestAnimationFrame(tick)
+      if (document.visibilityState === 'hidden') return
+      if (now - lastPaint < 31) return
+      lastPaint = now
+
       const el = featuredRef.current
       const tx = tiltRef.current.x
       const ty = tiltRef.current.y
       if (el) {
-        const t = performance.now() * 0.001
+        const t = now * 0.001
         const expanded = openedRef.current
         const breath = 1 + Math.sin(t * 1.25) * (expanded ? 0.010 : 0.032)
         const floatX = Math.cos(t * 0.72) * (expanded ? 1.5 : 5)
@@ -487,32 +567,36 @@ export default function AlbumArcWaterfall(props) {
           'translate3d(' + floatX.toFixed(2) + 'px,' + floatY.toFixed(2) + 'px,0) ' +
           'perspective(1200px) rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg) scale(' + breath.toFixed(4) + ')'
       }
-      const px = 50 + tx * 38
-      const py = 40 + ty * 32
-      const shine = shineRef.current
-      if (shine) {
-        const shineAngle = 104 + tx * 12
-        shine.style.background =
-          'linear-gradient(' + shineAngle.toFixed(1) + 'deg, ' +
-          'rgba(255,255,255,0) 8%, rgba(255,255,255,0.025) 28%, ' +
-          'rgba(255,255,255,0.17) 46%, rgba(255,255,255,0.035) 60%, rgba(255,255,255,0) 78%)'
-        shine.style.backgroundPosition = (50 + tx * 34).toFixed(1) + '% ' + (50 + ty * 34).toFixed(1) + '%'
+
+      // 大面积渐变不必跟随 30fps 重绘，约 8fps 已足够顺滑。
+      if (now - lastSurfacePaint > 120) {
+        lastSurfacePaint = now
+        const px = 50 + tx * 38
+        const py = 40 + ty * 32
+        const shine = shineRef.current
+        if (shine) {
+          const shineAngle = 104 + tx * 12
+          shine.style.background =
+            'linear-gradient(' + shineAngle.toFixed(1) + 'deg, ' +
+            'rgba(255,255,255,0) 8%, rgba(255,255,255,0.025) 28%, ' +
+            'rgba(255,255,255,0.17) 46%, rgba(255,255,255,0.035) 60%, rgba(255,255,255,0) 78%)'
+          shine.style.backgroundPosition = (50 + tx * 34).toFixed(1) + '% ' + (50 + ty * 34).toFixed(1) + '%'
+        }
+        // 环境色反光：用当前专辑里饱和度更高的两个颜色，跟着鼠标反向移动
+        const ambient = ambientRef.current
+        if (ambient) {
+          const p = paletteRef.current || []
+          const colA = p[1] ? p[1].hex : '#FFFFFF'
+          const colB = p[2] ? p[2].hex : (p[0] ? p[0].hex : '#FFFFFF')
+          const colC = p[3] ? p[3].hex : (p[0] ? p[0].hex : '#FFFFFF')
+          const ax = 100 - px
+          const ay = 100 - py
+          ambient.style.background =
+            'radial-gradient(330px circle at ' + ax.toFixed(1) + '% ' + ay.toFixed(1) + '%, ' + hexToRgba(colA, 0.30) + ', transparent 72%),' +
+            'radial-gradient(250px circle at ' + px.toFixed(1) + '% ' + (py * 0.7 + 20).toFixed(1) + '%, ' + hexToRgba(colB, 0.22) + ', transparent 68%),' +
+            'radial-gradient(210px circle at ' + (100 - px * 0.45).toFixed(1) + '% ' + (py * 0.45 + 8).toFixed(1) + '%, ' + hexToRgba(colC, 0.16) + ', transparent 72%)'
+        }
       }
-      // 环境色反光：用当前专辑里饱和度更高的两个颜色，跟着鼠标反向移动
-      const ambient = ambientRef.current
-      if (ambient) {
-        const p = paletteRef.current || []
-        const colA = p[1] ? p[1].hex : '#FFFFFF'
-        const colB = p[2] ? p[2].hex : (p[0] ? p[0].hex : '#FFFFFF')
-        const colC = p[3] ? p[3].hex : (p[0] ? p[0].hex : '#FFFFFF')
-        const ax = 100 - px
-        const ay = 100 - py
-        ambient.style.background =
-          'radial-gradient(330px circle at ' + ax.toFixed(1) + '% ' + ay.toFixed(1) + '%, ' + hexToRgba(colA, 0.30) + ', transparent 72%),' +
-          'radial-gradient(250px circle at ' + px.toFixed(1) + '% ' + (py * 0.7 + 20).toFixed(1) + '%, ' + hexToRgba(colB, 0.22) + ', transparent 68%),' +
-          'radial-gradient(210px circle at ' + (100 - px * 0.45).toFixed(1) + '% ' + (py * 0.45 + 8).toFixed(1) + '%, ' + hexToRgba(colC, 0.16) + ', transparent 72%)'
-      }
-      raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return function () { cancelAnimationFrame(raf) }
@@ -667,19 +751,28 @@ export default function AlbumArcWaterfall(props) {
             <div className="vinyl-disc" aria-hidden="true">
               <div className="vinyl-grooves" />
               <div className="vinyl-label">
-                <img src={active.cover} alt="" />
+                <img src={active.cover} alt="" decoding="async" draggable="false" />
               </div>
               <div className="vinyl-hole" />
             </div>
             <div className="vinyl-sleeve">
               <div className="vinyl-sleeve-face vinyl-sleeve-outside">
-                <img src={active.cover} alt={active.title + ' 专辑封面'} />
+                <img
+                  src={active.cover}
+                  alt={active.title + ' 专辑封面'}
+                  decoding="async"
+                  fetchpriority="high"
+                  draggable="false"
+                />
               </div>
               <div className="vinyl-sleeve-face vinyl-sleeve-inside">
                 <img
                   className="vinyl-sleeve-look"
                   src={active.outfit}
                   alt={active.title + ' 穿搭实拍'}
+                  loading="lazy"
+                  decoding="async"
+                  draggable="false"
                 />
               </div>
             </div>

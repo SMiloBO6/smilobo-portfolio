@@ -18,6 +18,19 @@ const WAVE_BARS = Array.from({ length: 34 }, function (_, index) {
   return index
 })
 
+const discStyleCache = new WeakMap()
+
+function setDiscStyle(node, property, value) {
+  let cache = discStyleCache.get(node)
+  if (!cache) {
+    cache = {}
+    discStyleCache.set(node, cache)
+  }
+  if (cache[property] === value) return
+  cache[property] = value
+  node.style.setProperty(property, value)
+}
+
 function HandDrawnFrame() {
   return (
     <svg
@@ -131,14 +144,22 @@ export default function HomeDiscDeck(props) {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let raf = 0
     let previousTime = performance.now()
+    let lastPaint = 0
     let uiPulse = 0
+    let viewportWidth = Math.max(1, window.innerWidth)
+    let viewportHeight = Math.max(1, window.innerHeight)
+
+    function refreshViewport() {
+      viewportWidth = Math.max(1, window.innerWidth)
+      viewportHeight = Math.max(1, window.innerHeight)
+    }
 
     function updateDisc(index, offset, progress, clock) {
       const node = discRefs.current.get(index)
       if (!node) return
 
       const distance = Math.abs(offset)
-      const discSize = Math.min(460, Math.max(230, window.innerWidth * 0.315))
+      const discSize = Math.min(460, Math.max(230, viewportWidth * 0.315))
       const slideX = Math.min(292, Math.max(150, discSize * 0.64))
       const slideY = Math.min(86, Math.max(46, discSize * 0.16))
       const x = offset * slideX
@@ -156,7 +177,7 @@ export default function HomeDiscDeck(props) {
       // 越靠近轨道两端，唱片越轻、越模糊，像在空间中逐渐失焦
       const edgeFade = smoothstep((distance - 0.45) / 2.35)
       const opacity = clamp(1 - edgeFade * 0.88, 0.12, 1)
-      const blur = clamp((distance - 0.55) * 2.7, 0, 10.5)
+      const blur = clamp((distance - 0.55) * 1.9, 0, 6.5)
       const brightness = clamp(1 - edgeFade * 0.24, 0.72, 1)
       const saturation = clamp(1 - edgeFade * 0.16, 0.78, 1)
       const zIndex = Math.max(1, Math.round(80 - distance * 10))
@@ -167,32 +188,39 @@ export default function HomeDiscDeck(props) {
       const shineX = clamp(52 - offset * 5.5, 12, 88)
       const shineY = clamp(46 + offset * 4.2, 14, 84)
 
-      node.style.setProperty('--disc-size', discSize.toFixed(1) + 'px')
-      node.style.setProperty('--disc-x', x.toFixed(2) + 'px')
-      node.style.setProperty('--disc-y', y.toFixed(2) + 'px')
-      node.style.setProperty('--disc-rotate', rotate.toFixed(2) + 'deg')
-      node.style.setProperty('--disc-scale', scale.toFixed(3))
-      node.style.setProperty('--disc-opacity', opacity.toFixed(3))
-      node.style.setProperty('--disc-blur', blur.toFixed(2) + 'px')
-      node.style.setProperty('--disc-brightness', brightness.toFixed(3))
-      node.style.setProperty('--disc-saturate', saturation.toFixed(3))
-      node.style.setProperty('--disc-yaw', yaw.toFixed(2) + 'deg')
-      node.style.setProperty('--disc-pitch', pitch.toFixed(2) + 'deg')
-      node.style.setProperty('--disc-card-roll', cardRoll.toFixed(2) + 'deg')
-      node.style.setProperty('--disc-depth', depth.toFixed(1) + 'px')
-      node.style.setProperty('--disc-shine-x', shineX.toFixed(1) + '%')
-      node.style.setProperty('--disc-shine-y', shineY.toFixed(1) + '%')
-      node.style.zIndex = String(zIndex)
-      node.style.pointerEvents = opacity > 0.08 ? 'auto' : 'none'
+      setDiscStyle(node, '--disc-size', discSize.toFixed(1) + 'px')
+      setDiscStyle(node, '--disc-x', x.toFixed(2) + 'px')
+      setDiscStyle(node, '--disc-y', y.toFixed(2) + 'px')
+      setDiscStyle(node, '--disc-rotate', rotate.toFixed(2) + 'deg')
+      setDiscStyle(node, '--disc-scale', scale.toFixed(3))
+      setDiscStyle(node, '--disc-opacity', opacity.toFixed(3))
+      setDiscStyle(node, '--disc-blur', blur.toFixed(2) + 'px')
+      setDiscStyle(node, '--disc-brightness', brightness.toFixed(3))
+      setDiscStyle(node, '--disc-saturate', saturation.toFixed(3))
+      setDiscStyle(node, '--disc-yaw', yaw.toFixed(2) + 'deg')
+      setDiscStyle(node, '--disc-pitch', pitch.toFixed(2) + 'deg')
+      setDiscStyle(node, '--disc-card-roll', cardRoll.toFixed(2) + 'deg')
+      setDiscStyle(node, '--disc-depth', depth.toFixed(1) + 'px')
+      setDiscStyle(node, '--disc-shine-x', shineX.toFixed(1) + '%')
+      setDiscStyle(node, '--disc-shine-y', shineY.toFixed(1) + '%')
+      setDiscStyle(node, 'z-index', String(zIndex))
+      setDiscStyle(node, 'pointer-events', opacity > 0.08 ? 'auto' : 'none')
     }
 
     function tick(now) {
+      raf = requestAnimationFrame(tick)
+      if (document.visibilityState === 'hidden') {
+        previousTime = now
+        return
+      }
+      // 30fps is enough for the floating discs and cuts continuous paint work.
+      if (now - lastPaint < 31) return
+      lastPaint = now
+
       const elapsed = Math.min(0.05, (now - previousTime) / 1000)
       previousTime = now
 
       const pointer = pointerRef.current
-      const viewportWidth = Math.max(1, window.innerWidth)
-      const viewportHeight = Math.max(1, window.innerHeight)
       let pointerX = 0.5
       let pointerY = 0.5
 
@@ -237,16 +265,23 @@ export default function HomeDiscDeck(props) {
       // 光碟自行运转；鼠标越靠近转速越慢，贴近时几乎停住
       let slowdown = 1
       if (pointer.active) {
+        const distanceCursor = ((cursorRef.current % total) + total) % total
         let nearestDistance = Number.POSITIVE_INFINITY
-        discRefs.current.forEach(function (node) {
-          const rect = node.getBoundingClientRect()
-          const centerX = rect.left + rect.width / 2
-          const centerY = rect.top + rect.height / 2
+        const discSize = Math.min(460, Math.max(230, viewportWidth * 0.315))
+        const slideX = Math.min(292, Math.max(150, discSize * 0.64))
+        const slideY = Math.min(86, Math.max(46, discSize * 0.16))
+
+        for (let index = 0; index < total; index += 1) {
+          let offset = index - distanceCursor
+          if (offset > total / 2) offset -= total
+          if (offset < -total / 2) offset += total
+          const centerX = viewportWidth * 0.5 + offset * slideX
+          const centerY = viewportHeight * 0.5 - offset * slideY
           nearestDistance = Math.min(
             nearestDistance,
             Math.hypot(pointer.x - centerX, pointer.y - centerY)
           )
-        })
+        }
         if (!Number.isFinite(nearestDistance)) {
           nearestDistance = Math.hypot(
             pointer.x - viewportWidth * 0.5,
@@ -306,14 +341,17 @@ export default function HomeDiscDeck(props) {
         })
       }
 
-      raf = requestAnimationFrame(tick)
     }
 
     const initialClock = performance.now() / 1000
     discRefs.current.forEach(function (node, index) { updateDisc(index, index, 0, initialClock) })
 
     raf = requestAnimationFrame(tick)
-    return function () { cancelAnimationFrame(raf) }
+    window.addEventListener('resize', refreshViewport, { passive: true })
+    return function () {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', refreshViewport)
+    }
   }, [albums])
 
   function switchDisc(direction) {
@@ -417,7 +455,16 @@ export default function HomeDiscDeck(props) {
                     <div className="disc-home-disc-tilt">
                       <div className="disc-home-disc-flipper">
                         <div className="disc-home-disc disc-home-disc-front">
-                          <img src={album.cover} alt={album.title + ' 专辑封面'} />
+                          <img
+                            src={album.cover}
+                            alt={album.title + ' 专辑封面'}
+                            width="1200"
+                            height="1200"
+                            loading={index === 0 ? 'eager' : 'lazy'}
+                            fetchpriority={index === 0 ? 'high' : 'auto'}
+                            decoding="async"
+                            draggable="false"
+                          />
                           <span className="disc-home-disc-wash" aria-hidden="true" />
                           <span className="disc-home-disc-grooves" aria-hidden="true" />
                           <span className="disc-home-disc-rim" aria-hidden="true" />
@@ -428,6 +475,8 @@ export default function HomeDiscDeck(props) {
                             src={album.outfit || album.cover}
                             alt=""
                             loading="lazy"
+                            decoding="async"
+                            draggable="false"
                             style={{ objectPosition: album.discOutfitPosition || 'center 36%' }}
                           />
                           <span className="disc-home-disc-back-vignette" />

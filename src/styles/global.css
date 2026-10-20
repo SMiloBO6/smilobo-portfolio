@@ -21,9 +21,9 @@
   --accent-soft: #F9A56D;
   --accent-pale: #FCE5D4;
   --white: #FFFFFF;
-  --serif: "Outfit", "Noto Sans SC", "PingFang SC", sans-serif;
-  --sans: "Manrope", "Noto Sans SC", "PingFang SC", sans-serif;
-  --mono: "JetBrains Mono", "SF Mono", monospace;
+  --serif: "Aptos Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --sans: "Aptos", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --mono: "Cascadia Mono", "SF Mono", "Consolas", monospace;
   --shadow-1: 0 1px 0 rgba(20, 23, 28, 0.04);
   --shadow-2: 0 8px 24px rgba(92, 54, 30, 0.07);
 }
@@ -40,7 +40,7 @@ html, body {
     radial-gradient(circle at 14% 18%, rgba(242, 106, 27, 0.10) 0%, transparent 34%),
     radial-gradient(circle at 86% 72%, var(--dyn-c) 0%, transparent 42%),
     linear-gradient(135deg, var(--dyn-a) 0%, var(--dyn-d) 52%, var(--dyn-b) 100%);
-  background-attachment: fixed;
+  background-attachment: scroll;
   color: var(--ink);
   font-family: var(--sans);
   font-size: 16px;
@@ -76,6 +76,26 @@ em { font-style: normal; }
 .route-transition {
   position: relative;
   min-height: calc(100vh - 140px);
+}
+
+.route-loading {
+  min-height: 58vh;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+
+.route-loading i {
+  width: 28px;
+  height: 28px;
+  border: 2px solid rgba(242, 106, 27, 0.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: route-loading-spin .7s linear infinite;
+}
+
+@keyframes route-loading-spin {
+  to { transform: rotate(360deg); }
 }
 
 .route-sweep {
@@ -1656,8 +1676,7 @@ a.contact-row-value:hover { color: var(--accent); }
     radial-gradient(46% 40% at 20% 14%, var(--dyn-deep2) 0%, transparent 64%),
     radial-gradient(52% 44% at 82% 86%, var(--dyn-deep) 0%, transparent 66%);
   opacity: .46;
-  filter: blur(20px);
-  animation: wf-ambient-drift 30s ease-in-out infinite alternate;
+  filter: none;
 }
 @keyframes wf-ambient-drift {
   from { transform: translate3d(-2.5%, -1.5%, 0) scale(1.02); }
@@ -1676,7 +1695,7 @@ a.contact-row-value:hover { color: var(--accent); }
 }
 .album-waterfall.is-expanded > .waterfall-row {
   opacity: .86;
-  filter: blur(1.8px) brightness(.8) saturate(.9);
+  filter: brightness(.84) saturate(.92);
   transform: scale(.995);
 }
 .album-waterfall > .waterfall-row:last-child {
@@ -1713,7 +1732,7 @@ a.contact-row-value:hover { color: var(--accent); }
   padding: 0;
   cursor: pointer;
   transform: translate3d(0, calc(var(--wf-amp, 46px) * var(--curve-y, 0)), 0) rotate(var(--curve-rot, 0deg));
-  transition: transform .18s ease-out, filter .35s ease;
+  transition: filter .35s ease;
   filter: brightness(0.88);
   outline: none;
   margin-left: -68px;
@@ -2479,7 +2498,7 @@ a.contact-row-value:hover { color: var(--accent); }
     -webkit-backdrop-filter: blur(1px) saturate(.92) brightness(.92);
   }
   .album-waterfall.is-expanded .waterfall-row {
-    filter: blur(1.4px) brightness(.82) saturate(.92);
+    filter: brightness(.84) saturate(.92);
   }
   .album-waterfall.is-expanded .waterfall-stage::before {
     width: calc(var(--wf-expanded-size) + 72px);
@@ -5530,7 +5549,7 @@ body.home-theme {
   height: min(64vh, 620px);
   background:
     radial-gradient(ellipse, rgba(255, 255, 255, 0.7), rgba(255, 207, 168, 0.2) 34%, transparent 70%);
-  filter: blur(18px);
+  filter: none;
 }
 
 .disc-home-stage::after {
@@ -5540,7 +5559,7 @@ body.home-theme {
   border-radius: 50%;
   background:
     radial-gradient(ellipse, rgba(91, 24, 0, 0.22), rgba(145, 48, 7, 0.1) 42%, transparent 72%);
-  filter: blur(14px);
+  filter: none;
 }
 
 .disc-home-arc-guide {
@@ -5652,8 +5671,6 @@ body.home-theme {
 .disc-home-disc-float {
   position: absolute;
   inset: 0;
-  animation: disc-home-breathe 9.8s ease-in-out infinite;
-  animation-delay: calc(var(--disc-order, 0) * -0.82s);
   transform-origin: 50% 54%;
   will-change: transform;
 }
@@ -12146,6 +12163,40 @@ body.lab-theme .tool-preview {
   .carrot-chat,
   .carrot-chat-orb-spark {
     animation: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav {
+    background: rgba(255, 251, 247, 0.95);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  [data-theme="dark"] .nav {
+    background: rgba(23, 20, 18, 0.96);
+  }
+
+  .album-waterfall::after {
+    animation: none;
+    filter: none;
+  }
+
+  .route-loading i {
+    animation-duration: 1s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .album-waterfall::after,
+  .route-loading i {
+    animation: none;
+  }
+
+  .waterfall-card,
+  .waterfall-track,
+  .waterfall-featured {
+    will-change: auto;
   }
 }
 

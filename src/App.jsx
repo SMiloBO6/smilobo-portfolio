@@ -1,16 +1,17 @@
 ﻿import { Routes, Route } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import Navbar from './components/Navbar.jsx'
 import Footer from './components/Footer.jsx'
 import PageTransition from './components/PageTransition.jsx'
 import { Navigate, useParams } from 'react-router-dom'
 import GlobalCarrotAssistant from './components/GlobalCarrotAssistant.jsx'
 import Home from './components/pages/Home.jsx'
-import Works from './components/pages/Works.jsx'
-import Waterfall from './components/pages/Waterfall.jsx'
-import WorkDetail from './components/pages/WorkDetail.jsx'
-import About from './components/pages/About.jsx'
-import Tool from './components/pages/Tool.jsx'
+
+const Works = lazy(function () { return import('./components/pages/Works.jsx') })
+const Waterfall = lazy(function () { return import('./components/pages/Waterfall.jsx') })
+const WorkDetail = lazy(function () { return import('./components/pages/WorkDetail.jsx') })
+const About = lazy(function () { return import('./components/pages/About.jsx') })
+const Tool = lazy(function () { return import('./components/pages/Tool.jsx') })
 
 function StoryRedirect() {
   const { id } = useParams()
@@ -22,6 +23,14 @@ function getInitialTheme() {
   const saved = window.localStorage.getItem('portfolio-theme')
   if (saved === 'dark' || saved === 'light') return saved
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+function RouteLoading() {
+  return (
+    <div className="route-loading" role="status" aria-label="页面加载中">
+      <i aria-hidden="true" />
+    </div>
+  )
 }
 
 export default function App() {
@@ -49,23 +58,25 @@ export default function App() {
       <Navbar theme={theme} onToggleTheme={toggleTheme} />
       <main className="app-main">
         <PageTransition>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/works" element={<Works />} />
-            <Route path="/waterfall" element={<Waterfall />} />
-            <Route path="/works/:id" element={<WorkDetail />} />
-            <Route path="/works/:id/story" element={<StoryRedirect />} />
-            <Route path="/about" element={<About />} />
-            <Route
-              path="/tool"
-              element={
-                <Tool
-                  carrotMessages={carrotMessages}
-                  setCarrotMessages={setCarrotMessages}
-                />
-              }
-            />
-          </Routes>
+          <Suspense fallback={<RouteLoading />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/works" element={<Works />} />
+              <Route path="/waterfall" element={<Waterfall />} />
+              <Route path="/works/:id" element={<WorkDetail />} />
+              <Route path="/works/:id/story" element={<StoryRedirect />} />
+              <Route path="/about" element={<About />} />
+              <Route
+                path="/tool"
+                element={
+                  <Tool
+                    carrotMessages={carrotMessages}
+                    setCarrotMessages={setCarrotMessages}
+                  />
+                }
+              />
+            </Routes>
+          </Suspense>
         </PageTransition>
       </main>
       <Footer />
