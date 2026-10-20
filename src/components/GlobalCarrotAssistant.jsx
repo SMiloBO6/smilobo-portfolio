@@ -433,14 +433,14 @@ export default function GlobalCarrotAssistant(props) {
   const messageEndRef = useRef(null)
 
   useEffect(function () {
-    if (!open || advisorState !== 'idle') return undefined
+    if (!open) return undefined
     let active = true
     setAdvisorState('checking')
     checkAdvisorStatus().then(function (status) {
       if (active) setAdvisorState(status.configured ? 'online' : 'local')
     })
     return function () { active = false }
-  }, [open, advisorState])
+  }, [open])
 
   useEffect(function () {
     function openCarrotChat() {
