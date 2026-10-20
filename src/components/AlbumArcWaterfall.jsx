@@ -2,6 +2,8 @@ import { useRef, useEffect, useState, useMemo, Fragment } from 'react'
 import { Link } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { extractPalette, mixHex, hexToRgba, boostSaturation } from '../utils/color.js'
+import { coverImageVariant } from '../utils/assetUrl.js'
+import useCoverWidth from '../hooks/useCoverWidth.js'
 
 // 线上音乐平台：没有单独配置专辑直达链接时，退回「歌手 + 专辑名」的站内搜索页
 const MUSIC_SERVICES = [
@@ -380,7 +382,7 @@ function WaterfallRow(props) {
               aria-label={item.album.title + (item.face === 'outfit' ? ' 穿搭实拍' : ' 专辑封面')}
             >
               <img
-                src={item.src}
+                src={coverImageVariant(item.src, 320)}
                 alt={item.album.title}
                 width="148"
                 height="148"
@@ -398,6 +400,7 @@ function WaterfallRow(props) {
 
 export default function AlbumArcWaterfall(props) {
   const { albums, initialAlbumId = '' } = props
+  const coverWidth = useCoverWidth()
   const requestedAlbum = useMemo(function () {
     return albums.find(function (album) { return album.id === initialAlbumId }) || albums[0]
   }, [albums, initialAlbumId])
@@ -467,7 +470,7 @@ export default function AlbumArcWaterfall(props) {
         setExtracted(extractedRef.current)
       }
     }
-    img.src = active.cover
+    img.src = coverImageVariant(active.cover, 320)
     return function () { cancelled = true }
   }, [active.id, active.cover])
 
@@ -676,7 +679,7 @@ export default function AlbumArcWaterfall(props) {
     const from = img.getBoundingClientRect()
     const to = featured.getBoundingClientRect()
     const clone = document.createElement('img')
-    clone.src = img.currentSrc || img.src
+    clone.src = coverImageVariant(album.cover, coverWidth) || img.currentSrc || img.src
     clone.alt = ''
     clone.className = 'waterfall-flight'
     clone.style.left = from.left + 'px'
@@ -751,14 +754,14 @@ export default function AlbumArcWaterfall(props) {
             <div className="vinyl-disc" aria-hidden="true">
               <div className="vinyl-grooves" />
               <div className="vinyl-label">
-                <img src={active.cover} alt="" decoding="async" draggable="false" />
+                <img src={coverImageVariant(active.cover, 320)} alt="" decoding="async" draggable="false" />
               </div>
               <div className="vinyl-hole" />
             </div>
             <div className="vinyl-sleeve">
               <div className="vinyl-sleeve-face vinyl-sleeve-outside">
                 <img
-                  src={active.cover}
+                  src={coverImageVariant(active.cover, coverWidth)}
                   alt={active.title + ' 专辑封面'}
                   decoding="async"
                   fetchpriority="high"
@@ -768,7 +771,7 @@ export default function AlbumArcWaterfall(props) {
               <div className="vinyl-sleeve-face vinyl-sleeve-inside">
                 <img
                   className="vinyl-sleeve-look"
-                  src={active.outfit}
+                  src={coverImageVariant(active.outfit, coverWidth)}
                   alt={active.title + ' 穿搭实拍'}
                   loading="lazy"
                   decoding="async"

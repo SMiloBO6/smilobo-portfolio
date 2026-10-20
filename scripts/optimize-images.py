@@ -5,6 +5,7 @@ from PIL import Image, ImageOps
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / "public"
+COVER_WIDTHS = (320, 480)
 
 # Long edges are capped to realistic display sizes while retaining enough
 # resolution for high-density screens.
@@ -58,6 +59,33 @@ def main():
             converted += 1
             original_bytes += source.stat().st_size
             output_bytes += target.stat().st_size
+
+            if folder == "covers":
+                for width in COVER_WIDTHS:
+                    variant_target = source.with_name(
+                        f"{source.stem}-{width}.webp"
+                    )
+                    variant = image.copy()
+                    variant.thumbnail(
+                        (width, width),
+                        Image.Resampling.LANCZOS,
+                    )
+                    if has_alpha:
+                        variant.save(
+                            variant_target,
+                            "WEBP",
+                            quality=quality,
+                            method=6,
+                            alpha_quality=92,
+                        )
+                    else:
+                        variant.convert("RGB").save(
+                            variant_target,
+                            "WEBP",
+                            quality=quality,
+                            method=6,
+                        )
+                    output_bytes += variant_target.stat().st_size
 
     mascot_source = PUBLIC / "carrot-mascot.png"
     if mascot_source.exists():

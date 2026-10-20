@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import SignatureMark from './SignatureMark.jsx'
+import { coverImageVariant } from '../utils/assetUrl.js'
+import useCoverWidth from '../hooks/useCoverWidth.js'
 
 const CORNER_RAIL_WIDTH = 38
 const CORNER_PANEL_WIDTH = 252
@@ -82,6 +84,7 @@ export default function HomeDiscDeck(props) {
   const [focus, setFocus] = useState({ index: 0, progress: 0 })
   const [paused, setPaused] = useState(false)
   const [stageReady, setStageReady] = useState(false)
+  const [loadedBacks, setLoadedBacks] = useState(function () { return new Set() })
   const rootRef = useRef(null)
   const entryRef = useRef(null)
   const cornerRef = useRef(null)
@@ -97,6 +100,7 @@ export default function HomeDiscDeck(props) {
 
   const focusedAlbum = albums[focus.index] || albums[0]
   const progressPercent = Math.round(clamp(focus.progress, 0, 1) * 100)
+  const coverWidth = useCoverWidth()
 
   useLayoutEffect(function () {
     document.body.classList.add('home-theme')
@@ -106,6 +110,19 @@ export default function HomeDiscDeck(props) {
   useEffect(function () {
     pausedRef.current = paused
   }, [paused])
+
+  useEffect(function () {
+    if (!focusedAlbum) return undefined
+    const timer = window.setTimeout(function () {
+      setLoadedBacks(function (current) {
+        if (current.has(focusedAlbum.id)) return current
+        const next = new Set(current)
+        next.add(focusedAlbum.id)
+        return next
+      })
+    }, 1200)
+    return function () { window.clearTimeout(timer) }
+  }, [focusedAlbum && focusedAlbum.id])
 
   useEffect(function () {
     const timer = window.setTimeout(function () {
@@ -448,6 +465,22 @@ export default function HomeDiscDeck(props) {
                 }}
                 style={{ '--disc-order': index }}
                 to={'/waterfall?album=' + album.id}
+                onMouseEnter={function () {
+                  setLoadedBacks(function (current) {
+                    if (current.has(album.id)) return current
+                    const next = new Set(current)
+                    next.add(album.id)
+                    return next
+                  })
+                }}
+                onFocus={function () {
+                  setLoadedBacks(function (current) {
+                    if (current.has(album.id)) return current
+                    const next = new Set(current)
+                    next.add(album.id)
+                    return next
+                  })
+                }}
                 aria-label={'打开专辑 ' + album.title + ' 的穿搭瀑布流；悬停或聚焦唱片可预览穿搭照片'}
               >
                 <div className="disc-home-disc-entry">
@@ -456,7 +489,7 @@ export default function HomeDiscDeck(props) {
                       <div className="disc-home-disc-flipper">
                         <div className="disc-home-disc disc-home-disc-front">
                           <img
-                            src={album.cover}
+                            src={coverImageVariant(album.cover, coverWidth)}
                             alt={album.title + ' 专辑封面'}
                             width="1200"
                             height="1200"
@@ -471,14 +504,17 @@ export default function HomeDiscDeck(props) {
                           <span className="disc-home-disc-hole" aria-hidden="true" />
                         </div>
                         <div className="disc-home-disc disc-home-disc-back" aria-hidden="true">
-                          <img
-                            src={album.outfit || album.cover}
-                            alt=""
-                            loading="lazy"
-                            decoding="async"
-                            draggable="false"
-                            style={{ objectPosition: album.discOutfitPosition || 'center 36%' }}
-                          />
+                          {loadedBacks.has(album.id) ? (
+                            <img
+                              src={coverImageVariant(album.outfit || album.cover, coverWidth)}
+                              alt=""
+                              width="1200"
+                              height="1200"
+                              decoding="async"
+                              draggable="false"
+                              style={{ objectPosition: album.discOutfitPosition || 'center 36%' }}
+                            />
+                          ) : null}
                           <span className="disc-home-disc-back-vignette" />
                           <span className="disc-home-disc-back-grooves" />
                           <span className="disc-home-disc-back-rim" />

@@ -424,7 +424,7 @@ export default function GlobalCarrotAssistant(props) {
   const [bubble, setBubble] = useState(false)
   const [promptIndex, setPromptIndex] = useState(0)
   const [thinking, setThinking] = useState(false)
-  const [advisorState, setAdvisorState] = useState('checking')
+  const [advisorState, setAdvisorState] = useState('idle')
   const [revealed, setRevealed] = useState(!isHome)
   const [picked, setPicked] = useState(!isHome)
   const [copiedKey, setCopiedKey] = useState(null)
@@ -433,12 +433,14 @@ export default function GlobalCarrotAssistant(props) {
   const messageEndRef = useRef(null)
 
   useEffect(function () {
+    if (!open || advisorState !== 'idle') return undefined
     let active = true
+    setAdvisorState('checking')
     checkAdvisorStatus().then(function (status) {
       if (active) setAdvisorState(status.configured ? 'online' : 'local')
     })
     return function () { active = false }
-  }, [])
+  }, [open, advisorState])
 
   useEffect(function () {
     function openCarrotChat() {
