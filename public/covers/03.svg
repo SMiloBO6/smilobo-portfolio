@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+  <rect width="600" height="600" fill="#F5C04A"/>
+  <circle cx="200" cy="220" r="70" fill="#E89B2A"/>
+  <circle cx="320" cy="180" r="50" fill="#E89B2A"/>
+  <circle cx="420" cy="240" r="60" fill="#E89B2A"/>
+  <circle cx="270" cy="310" r="55" fill="#E89B2A"/>
+  <circle cx="380" cy="330" r="65" fill="#E89B2A"/>
+  <circle cx="200" cy="220" r="20" fill="#2F4A3A"/>
+  <rect x="0" y="480" width="600" height="120" fill="#2F4A3A"/>
+  <text x="40" y="560" font-family="Inter, sans-serif" font-size="14" letter-spacing="2" fill="#F5C04A">03 / Flower Boy</text>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+  <rect width="600" height="600" fill="#F4F1EA"/>
+  <rect x="0" y="0" width="300" height="600" fill="#0E1F1C"/>
+  <ellipse cx="300" cy="300" rx="180" ry="60" fill="none" stroke="#1A1A1A" stroke-width="6"/>
+  <ellipse cx="300" cy="300" rx="120" ry="40" fill="#1A1A1A"/>
+  <ellipse cx="300" cy="300" rx="60" ry="20" fill="#3B6E5C"/>
+  <circle cx="300" cy="300" r="8" fill="#F4F1EA"/>
+  <text x="40" y="560" font-family="Inter, sans-serif" font-size="14" letter-spacing="2" fill="#1A1A1A">02 / 4 Your Eyez Only</text>
+</svg>

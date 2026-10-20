@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+  <rect width="600" height="600" fill="#C25BA0"/>
+  <polygon points="300,140 380,360 220,360" fill="none" stroke="#5A1F4A" stroke-width="6"/>
+  <line x1="300" y1="360" x2="300" y2="500" stroke="#5A1F4A" stroke-width="6"/>
+  <line x1="240" y1="500" x2="360" y2="500" stroke="#5A1F4A" stroke-width="6"/>
+  <line x1="180" y1="180" x2="420" y2="300" stroke="#FFE0F0" stroke-width="2" opacity="0.4"/>
+  <line x1="420" y1="180" x2="180" y2="300" stroke="#FFE0F0" stroke-width="2" opacity="0.4"/>
+  <text x="40" y="560" font-family="Inter, sans-serif" font-size="14" letter-spacing="2" fill="#FFE0F0">04 / Graduation</text>
+</svg>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+  <rect width="600" height="600" fill="#0E0A1A"/>
+  <circle cx="120" cy="100" r="2" fill="#9B7BD8"/>
+  <circle cx="200" cy="160" r="1.5" fill="#FFFFFF"/>
+  <circle cx="320" cy="80" r="2" fill="#FFFFFF"/>
+  <circle cx="450" cy="140" r="1.5" fill="#9B7BD8"/>
+  <circle cx="500" cy="220" r="2" fill="#FFFFFF"/>
+  <circle cx="80" cy="280" r="1.5" fill="#9B7BD8"/>
+  <circle cx="380" cy="300" r="2" fill="#FFFFFF"/>
+  <circle cx="160" cy="380" r="1.5" fill="#FFFFFF"/>
+  <circle cx="290" cy="200" r="1.5" fill="#9B7BD8"/>
+  <polygon points="300,240 318,290 370,290 326,322 342,374 300,344 258,374 274,322 230,290 282,290" fill="#9B7BD8" opacity="0.9"/>
+  <text x="40" y="560" font-family="Inter, sans-serif" font-size="14" letter-spacing="2" fill="#9B7BD8">05 / Legends Never Die</text>
+</svg>

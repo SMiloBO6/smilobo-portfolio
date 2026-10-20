@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+  <rect width="600" height="600" fill="#C9A24B"/>
+  <rect x="0" y="420" width="600" height="180" fill="#4A5C3A"/>
+  <circle cx="300" cy="300" r="180" fill="#E8B96A"/>
+  <path d="M 120 420 A 180 180 0 0 1 480 420 Z" fill="#D4854A"/>
+  <line x1="0" y1="420" x2="600" y2="420" stroke="#2F3D2A" stroke-width="2"/>
+  <text x="40" y="560" font-family="Inter, sans-serif" font-size="14" letter-spacing="2" fill="#F2EBDC">01 / 100 种生活</text>
+</svg>
