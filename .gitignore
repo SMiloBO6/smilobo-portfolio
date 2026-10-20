@@ -6,6 +6,8 @@ dist/
 .shots/
 .pnpm-store/
 data/
+!src/data/
+!src/data/albums.json
 public/inbox.html
 $null
 3270
