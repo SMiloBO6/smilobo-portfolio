@@ -1,4 +1,4 @@
-import data from '../../data/albums.json'
+import data from '../../data/albums.js'
 import AlbumArcWaterfall from '../AlbumArcWaterfall.jsx'
 import { useSearchParams } from 'react-router-dom'
 

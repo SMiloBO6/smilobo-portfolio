@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
-import data from '../../data/albums.json'
+import data from '../../data/albums.js'
 import CarrotMascot from '../CarrotMascot.jsx'
 import { getSocialLinks } from '../../utils/socialLinks.js'
 

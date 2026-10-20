@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import data from '../../data/albums.json'
+import data from '../../data/albums.js'
 
 const LIBRARY_MODES = [
   { id: 'outfit', label: '穿搭' },

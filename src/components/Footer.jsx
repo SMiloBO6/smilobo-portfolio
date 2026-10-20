@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom'
-import data from '../data/albums.json'
+import data from '../data/albums.js'
 import { getSocialLinks } from '../utils/socialLinks.js'
 
 export default function Footer() {

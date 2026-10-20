@@ -104,11 +104,11 @@ em { font-style: normal; }
   display: block;
   flex: 0 0 auto;
   background-color: currentColor;
-  -webkit-mask-image: url("/brand/smile-signature-alpha.png");
+  -webkit-mask-image: var(--signature-mask);
   -webkit-mask-position: center;
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: contain;
-  mask-image: url("/brand/smile-signature-alpha.png");
+  mask-image: var(--signature-mask);
   mask-position: center;
   mask-repeat: no-repeat;
   mask-size: contain;

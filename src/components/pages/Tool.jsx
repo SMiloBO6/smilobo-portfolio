@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import data from '../../data/albums.json'
+import data from '../../data/albums.js'
 import CarrotMascot from '../CarrotMascot.jsx'
+import { assetUrl } from '../../utils/assetUrl.js'
 import {
   buildColorSchemes,
   extractPalette,
@@ -102,7 +103,7 @@ function findAlbumFromLabel(label) {
 
 function loadProductImage(key) {
   if (productImageCache.has(key)) return productImageCache.get(key)
-  const src = PRODUCT_ASSETS[key]
+  const src = assetUrl(PRODUCT_ASSETS[key])
   if (!src) return Promise.reject(new Error('Unknown product asset: ' + key))
 
   const promise = new Promise(function (resolve, reject) {

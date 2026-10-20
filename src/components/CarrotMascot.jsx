@@ -1,9 +1,11 @@
+import { assetUrl } from '../utils/assetUrl.js'
+
 export default function CarrotMascot(props) {
   const size = props.size || 104
   return (
     <img
       className={'carrot-mascot-art' + (props.className ? ' ' + props.className : '')}
-      src="/carrot-mascot.png"
+      src={assetUrl('/carrot-mascot.png')}
       width={size}
       height={size}
       alt=""

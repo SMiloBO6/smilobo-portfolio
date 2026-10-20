@@ -1,4 +1,4 @@
-import data from '../../data/albums.json'
+import data from '../../data/albums.js'
 import HomeDiscDeck from '../HomeDiscDeck.jsx'
 
 export default function Home() {

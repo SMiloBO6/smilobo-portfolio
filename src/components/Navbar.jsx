@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router-dom'
-import data from '../data/albums.json'
+import data from '../data/albums.js'
 import SignatureMark from './SignatureMark.jsx'
 
 function ThemeIcon(props) {

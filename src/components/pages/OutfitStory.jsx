@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
-import data from '../../data/albums.json'
+import data from '../../data/albums.js'
 import PaletteRail from '../PaletteRail.jsx'
 import { useAlbumPalette } from '../../utils/useAlbumPalette.js'
 

@@ -1,3 +1,5 @@
+import { assetUrl } from '../utils/assetUrl.js'
+
 export default function SignatureMark(props) {
   return (
     <span
@@ -5,6 +7,7 @@ export default function SignatureMark(props) {
       role={props.decorative ? undefined : 'img'}
       aria-hidden={props.decorative ? 'true' : undefined}
       aria-label={props.decorative ? undefined : props.label || 'SMilE萝卜'}
+      style={{ '--signature-mask': `url("${assetUrl('/brand/smile-signature-alpha.png')}")` }}
     />
   )
 }
